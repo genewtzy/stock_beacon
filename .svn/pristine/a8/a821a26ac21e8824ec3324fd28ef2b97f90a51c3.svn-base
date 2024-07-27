@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+<script>
+    const invalid_share_code = '股票代码无效';
+    const invalid_start_time = '开始时间不能大于结束时间'
+
+    function compare_date(date1, date2)
+    {
+      var oDate1 = new Date(date1);
+      var oDate2 = new Date(date2);
+
+      if (oDate1.getTime() > oDate2.getTime()) {//转换成毫秒进行比较
+          alert(invalid_start_time);
+          return false;
+      } else {
+          return true;
+      }
+    }
+    function openURL(url)
+    {
+        window.open(url,'mainFrame');
+    }
+
+    function on_submit() {
+      //获得参数
+      var share_code = '';
+      var period = '';
+      var opponent_type = '';
+      var opponent_share_code = '';
+      var start_date  = '';
+      var end_date = '';
+
+      //share_code
+      share_code = document.getElementById("share_code").value;
+      share_code = share_code.replace(/\s/g, "");   //去除所有的空格
+      var re = /^[0-9\s]{6}$/;
+      if(share_code.match(re) == null)
+      {
+          alert(invalid_share_code);
+          document.getElementById("share_code").focus();
+          return false;
+      }
+
+      period = document.getElementById("period").value;
+
+      start_date = document.getElementById("start_date").value;
+      end_date = document.getElementById("end_date").value;
+      if(!compare_date(start_date,end_date)) {
+        document.getElementById("start_date").focus();
+        return false;
+      }
+
+      opponent_type = document.getElementById("opponent_type").value;
+
+      if('other_stock'=== opponent_type) {
+        opponent_share_code = document.getElementById("opponent_share_code").value;
+        var re = /^[0-9\s]{6}$/;
+        if(opponent_share_code.match(re) == null)
+        {
+            alert(invalid_share_code);
+            document.getElementById("opponent_share_code").focus();
+            return false;
+        }
+      }
+
+
+      const url = "/stock_beacon?share_code="+share_code+
+              "&period="+period+
+              "&start_date="+start_date+
+              "&end_date="+end_date+
+              "&opponent_type="+opponent_type+
+              "&opponent_share_code="+opponent_share_code+
+              "&"+Math.random();
+
+
+        /*
+        url='/test'
+        */
+        openURL(url);
+    }
+    function update_page_on_response() {
+        console.log('response received')
+    }
+    function end_time_default(){
+    //获取当前时间
+      var d = new Date();
+      //包装年月日的格式
+      var a = d.getFullYear() + "-";
+      //月是从零开始的所以得加1，并且判断月份是否大于等于10月，如果大于十月得个前面加零来跟格式匹配
+      if (d.getMonth() + 1 >= 10 ){
+          var c = (d.getMonth() + 1) + "-";
+      }
+      else{
+          var c = "0" + (d.getMonth() + 1) + '-';
+      }
+      //不能使用getDay()方法得原因是因为他获取的是今天星期几，只有7天
+      if (d.getDate() >= 10 ){
+          var n = d.getDate();
+      }
+      else{
+          var n = "0" + d.getDate();
+      }
+      //给input设置id属性，抓取属性值改变value的值
+      document.getElementById("end_date").value = a + c + n;
+    }
+
+    function select_opponent_type()
+    {
+      var objSelect = document.getElementById("opponent_type");
+
+      //清空下拉列表
+      objSelect.options.length = 0;
+      var varItem = new Option('无参照','none');
+      objSelect.options.add(varItem);
+
+      varItem = new Option('其他股票','other_stock');
+      objSelect.options.add(varItem);
+
+      varItem = new Option('上证综指','sh_index');
+      objSelect.options.add(varItem);
+
+      varItem = new Option('深圳成指','sz_index');
+      objSelect.options.add(varItem);
+
+      varItem = new Option('创业板指','innovation_index');
+      objSelect.options.add(varItem);
+      objSelect.value = 'innovation_index'
+    }
+
+    function select_period()
+    {
+      var objSelect = document.getElementById("period");
+
+      //清空下拉列表
+      objSelect.options.length = 0;
+      var varItem = new Option('日K','daily');
+      objSelect.options.add(varItem);
+
+      varItem = new Option('周K','weekly');
+      objSelect.options.add(varItem);
+
+      objSelect.value = 'weekly'
+    }
+
+    function init_page()
+    {
+       end_time_default();
+       select_opponent_type();
+       select_period();
+    }
+
+</script>
+
+<head >
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Document</title>
+  <style>
+    body {
+      background-image: url("{% static 'images/ocean.jpg' %}");
+      background-size: 100% 100%;
+    }
+
+    #login_box {
+      width: 358px;
+      height: 588px;
+      background-color: #00000060;
+      margin: auto;
+      margin-top: 5%;
+      text-align: center;
+      border-radius: 10px;
+      padding: 50px 50px;
+    }
+
+    h2 {
+      color: #ffffff90;
+      margin-top: 25%;
+    }
+    h3 {
+      color: #ffffff90;
+      margin-top: 5px;
+    }
+
+    #input-box {
+      margin-top: 5%;
+    }
+
+    span {
+      color: #fff;
+    }
+
+    input {
+      border: 0;
+      width: 250px;
+      font-size: 18px;
+      border-radius: 5px;
+      color: #fff;
+      background: transparent;
+      border-bottom: 2px solid #fff;
+      padding: 5px 10px;
+      outline: none;
+      margin-top: 20px;
+    }
+
+    button {
+      margin-top: 50px;
+      width: 265px;
+      height: 30px;
+      border-radius: 10px;
+      border: 0;
+      color: #fff;
+      text-align: center;
+      line-height: 30px;
+      font-size: 18px;
+      background-image: linear-gradient(to right, #30cfd0, #330867);
+    }
+    button:hover{
+      background-color: #1795bb;
+    }
+    button:active{
+        background-color: #1795bb;
+        box-shadow: 0 5px transparent;
+        transform:translateY(4px);
+    }
+
+
+    #sign_up {
+      margin-top: 45%;
+      margin-left: 60%;
+    }
+
+    a {
+      color: #b94648;
+    }
+
+    select {
+		display: inline-block;
+		position: relative;
+		vertical-align: middle;
+		overflow: hidden;
+		text-shadow: none;
+		transition: box-shadow 0.25s ease;
+        border: 0;
+        width: 265px;
+        font-size: 18px;
+        color:#fff;
+        border-radius: 5px;
+        background: transparent;
+        border-bottom: 2px solid #fff;
+        padding: 5px 10px;
+        outline: none;
+        margin-top: 20px;
+	}
+
+	select:hover {
+		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+        background: #2c117c;
+	}
+
+	select:before {
+		content: "";
+		position: absolute;
+		width: 0;
+		height: 0;
+		border: 10px solid transparent;
+		border-top-color: #ccc;
+		top: 14px;
+		right: 10px;
+		cursor: pointer;
+		z-index: -2;
+        background: transparent;
+	}
+	select select {
+		cursor: pointer;
+		padding: 10px;
+		width: 100%;
+		border: none;
+		background: transparent;
+		-webkit-appearance: none;
+		-moz-appearance: none;
+	}
+
+	select select:focus {
+		outline: none;
+	}
+  </style>
+</head>
+
+<body onload="init_page()">
+  <div id="login_box">
+    <h2></h2>
+    <div class="input_box">
+      <input type="text" placeholder="股票代码" id="share_code">
+    </div>
+
+    <div class="select">
+		<select id="period">
+		</select>
+    </div>
+
+    <div class="input_box">
+      <input type="date" value="2011-02-23" id="start_date">
+    </div>
+
+    <div class="input_box">
+      <input type="date" id="end_date">
+    </div>
+
+    <div class="select">
+		<select id="opponent_type">
+		</select>
+    </div>
+
+    <div class="input_box">
+      <input type="text" placeholder="参照股票代码" id="opponent_share_code">
+    </div>
+
+    <button onclick="on_submit()">提  交</button><br>
+
+  </div>
+</body>
+</html>

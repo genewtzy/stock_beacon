@@ -1,0 +1,288 @@
+import inspect
+import json
+import os
+from datetime import date
+from datetime import datetime as dt
+from io import StringIO
+
+from dateutil.relativedelta import relativedelta
+
+from .JsonUtils import *
+
+
+# 获得当前的类名字和方法名�?
+def run_info(object):
+    """
+
+    :param object:
+    :return:
+    """
+    return dt.strftime(dt.now(),'%Y-%m-%d %H:%M:%S %f  ') + object.__class__.__name__ + '::' + inspect.stack()[1][3] + ':' + str(inspect.currentframe().f_back.f_lineno)
+
+
+# 获得文件修改的日�?
+def file_modify_date_get(file_path):
+    """
+
+    :param file_path:
+    :return:
+    """
+    try:
+        last_update_date_float = os.path.getmtime(file_path)
+        last_update_date = dt.fromtimestamp(last_update_date_float).date()
+        return last_update_date
+    except Exception as e:
+        print(run_info(file_path), str(e))
+        return dt.strptime('1997-01-01', '%Y-%m-%d').date()
+
+
+def is_number(s):
+    """
+
+    :param s:
+    :return:
+    """
+    try:  # 如果能运行float(s)语句，返回True（字符串s是浮点数�?
+        float(s)
+        return True
+    except ValueError:  # ValueError为Python的一种标准异常，表示"传入无效的参�?
+        return False
+
+
+def is_float(string):
+    """
+
+    :param string:
+    :return:
+    """
+    try:
+        float(string)
+        return True
+    except ValueError:
+        return False
+
+
+# 移除不是数字或者为0的元�?
+def dates_values_illegal_item_remove(dates: list, values: list):
+    """
+
+    :param dates:
+    :param values:
+    :return:
+    """
+    i = 0
+    m_dates = []
+    m_values = []
+    while i < len(values):
+        if is_float(values[i]):
+            if abs(float(values[i])) > 1e-5:
+                m_dates.append(dates[i])
+                m_values.append(values[i])
+            else:
+                print(run_info(dates), i, dates[i], values[i], 'removed')
+        i += 1
+
+    return m_dates, m_values
+
+
+#
+def dates_values_extend(date_values: list, dates_extend_to: list, index=0):
+    """
+    :param date_values:
+    :param dates_extend_to:
+    :param index:
+    """
+    extended_date_values = []
+    i = 0
+    j = 0
+    print(run_info(date_values), 'date_values len', len(date_values),
+          'dates_extend_to len', len(dates_extend_to),
+          'extended_date_values len', len(extended_date_values),
+          'data_values[0', date_values[0],
+          'dates_extend_to[0]', dates_extend_to[0])
+    extend_item = date_values[j]
+    extended_date = dt.strptime(extend_item[index], '%Y-%m-%d').date()
+    while i < len(dates_extend_to):
+        item = dates_extend_to[i]
+        item_date = dt.strptime(item[index], '%Y-%m-%d').date()
+        item_date = item_date + relativedelta(years=-1)
+        if item_date >= extended_date and j < len(date_values) - 1:
+            j += 1
+            extend_item = date_values[j]
+            extended_date = dt.strptime(extend_item[index], '%Y-%m-%d').date()
+            print(run_info(item), item[index], extend_item[index], type(extend_item[index]))
+        extend_item[index] = item[index]
+        extended_date_values.append(extend_item)
+        i += 1
+
+    print(run_info(date_values), 'date_values len', len(date_values),
+          'dates_extend_to len', len(dates_extend_to),
+          'extended_date_values len', len(extended_date_values),
+          'data_values[0', date_values[0],
+          'dates_extend_to[0]', dates_extend_to[0])
+
+    return extended_date_values
+
+
+def profit_dates_values_sync(date_values: list, dates_sync_to: list, index=0, date_sync=False):
+    """
+    :param date_sync:
+    :param date_values:
+    :param dates_sync_to:
+    :param index:
+    """
+
+    print(run_info(date_values), 'date_values len', len(date_values),
+          'dates_sync_to len', len(dates_sync_to),
+          'data_values[0]', date_values[0],
+          'dates_sync_to[0]', dates_sync_to[0],
+          'date_values[last]', date_values[-1], )
+
+    # 先找到第一个被同步日期对应的利润表
+    '''
+    item = dates_sync_to[0]
+    first_sync_date = dt.strptime(item[index], '%Y-%m-%d').date()
+    i = 0
+    j = 0
+    mile_stone = date_values[0]
+    while i < len(date_values):
+        mile_stone = date_values[i]
+        mile_stone_date = dt.strptime(mile_stone[index], '%Y-%m-%d').date()
+        if mile_stone_date >= first_sync_date:
+            j = i
+            break
+        i += 1
+
+    print(run_info(date_values), 'mile_stone', mile_stone, 'first_sync_date', first_sync_date, 'i', i, 'j', j)
+    '''
+    j = 0
+    i = 0
+    sync_date_values = dates_sync_to.copy()
+    mile_stone = date_values[0]
+    mile_stone_date = dt.strptime(mile_stone[index], '%Y-%m-%d').date()
+    last_datas = []
+    while i < len(sync_date_values):
+        item = sync_date_values[i]
+        item_date = dt.strptime(item[index], '%Y-%m-%d').date()
+        if not date_sync:
+            item[0] = mile_stone[0]
+        item[1] = mile_stone[1]
+        item[2] = mile_stone[2]
+        item[3] = mile_stone[3]
+        item[4] = mile_stone[4]
+        item[5] = mile_stone[5]
+                                            # 通常最迟在第二年的4月30日看到前一年的年报
+        if item_date >= mile_stone_date + relativedelta(years=1) + relativedelta(months=4)  and j < len(date_values):
+            mile_stone = date_values[j]
+            mile_stone_date = dt.strptime(mile_stone[index], '%Y-%m-%d').date()  # + relativedelta(years=1)
+            print(run_info(mile_stone_date), 'item_date', item_date.strftime('%Y-%m-%d'), 'mile_stone', mile_stone)
+            j += 1
+        last_datas.append(item)
+        i += 1
+
+    print(run_info(date_values), 'date_values len', len(date_values),
+          'dates_sync_to len', len(dates_sync_to),
+          'last_datas len', len(last_datas),
+          'last_datas[0]', last_datas[0],
+          'dates_sync_to[0]', dates_sync_to[0],
+          'date_values[last]', date_values[-1], )
+
+    return last_datas
+
+
+def json_data_regularize(factor: float, json_data):
+    """
+
+    :param factor:
+    :param json_data:
+    :return:
+    """
+    converted_json_data = []
+    i = 0
+    while i < len(json_data):
+        item = json_data[i]
+        item[1] = round(float(item[1]) * factor, 2)
+        item[2] = round(float(item[2]) * factor, 2)
+        item[3] = round(float(item[3]) * factor, 2)
+        item[4] = round(float(item[4]) * factor, 2)
+        converted_json_data.append(item)
+        i += 1
+
+    return converted_json_data
+
+
+def is_market_a_open_day_bisect(period: str, today: date) -> bool:
+    """
+
+    :param period:
+    :param today:
+    :return:
+    """
+    this_time = dt.combine(date=today, time=dt.min.time())
+    stamp = this_time.timestamp()
+    array = market_open_days_get(period=period)
+    # 防止数据为初始化这里要判断一下
+    if len(array) == 0:
+        print(run_info(array),period,' not initialized!!!!!')
+        exit(-1)
+    index = binary_search(array, stamp)
+    if index >= len(array) or index < 0:
+        return False
+    return True
+
+
+open_days = []
+open_weeks = []
+
+
+def market_open_days_get(period: str) -> list:
+    """
+
+    :param period:
+    :return:
+    """
+    return open_weeks
+
+
+def market_open_days_init(period: str) -> list:
+    """
+
+    :param period:
+    :return:
+    """
+    opens = market_open_days_get(period=period)
+    file_path = 'index-000001/kline-' + period + '.json'
+    try:
+        json_data = read_json_file(file_path)
+    except Exception as e:
+        print(run_info(period), file_path, str(e))
+        return opens
+    for item in json_data:
+        stamp = dt.strptime(item[0], '%Y-%m-%d').timestamp()
+        opens.append(stamp)
+
+    print(run_info(period), 'len of open s', len(opens))
+
+    return opens
+
+
+def binary_search(array: list, target):
+    """
+
+    :param array:
+    :param target:
+    :return:
+    """
+    left = 0
+    right = len(array)
+    # 在list[left...right)里查找target，注意是左闭右开
+    while left < right:
+        mid = (right - left) // 2 + left  # 防止上面的写法整型溢出
+        if array[mid] == target:
+            return mid
+        else:
+            if target > array[mid]:
+                left = mid + 1  # 到list[mid + 1 ...right)里查找
+            elif target < array[mid]:
+                right = mid  # 到list[left ...mid)里查找
+    return -1  # 未找到target元素
