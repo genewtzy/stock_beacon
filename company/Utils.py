@@ -215,10 +215,10 @@ def json_data_regularize(factor: float, json_data, first_data_zero=False):
     i = 0
     while i < len(json_data):
         item = json_data[i]
-        item[1] = round((float(item[1]) - first_data) * factor, 2)
-        item[2] = round((float(item[2]) - first_data) * factor, 2)
-        item[3] = round((float(item[3]) - first_data) * factor, 2)
-        item[4] = round((float(item[4]) - first_data) * factor, 2)
+        item[1] = round((float(item[1]) ) * factor, 2)
+        item[2] = round((float(item[2]) ) * factor, 2)
+        item[3] = round((float(item[3]) ) * factor, 2)
+        item[4] = round((float(item[4]) ) * factor, 2)
         converted_json_data.append(item)
         i += 1
 

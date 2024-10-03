@@ -17,6 +17,7 @@ from dateutil.relativedelta import relativedelta
 from django.shortcuts import render
 from urllib.parse import urlparse
 from datetime import datetime as dt
+import re
 
 
 # 获取本地数据并解析
@@ -125,7 +126,7 @@ def kline_get(chart_data: List[Union[float, str]], title: str, style='red_green'
                     is_show=False,
                     type_="inside",
                     xaxis_index=[0, 1, 2],
-                    range_start=98,
+                    range_start=0,
                     range_end=100,
                 ),
                 opts.DataZoomOpts(
@@ -133,7 +134,7 @@ def kline_get(chart_data: List[Union[float, str]], title: str, style='red_green'
                     xaxis_index=[0, 1, 2],
                     type_="slider",
                     pos_top="85%",
-                    range_start=98,
+                    range_start=0,
                     range_end=100,
                 ),
             ],
@@ -354,7 +355,7 @@ def draw_charts(chart_data):
     webbrowser.open_new_tab("professional_kline_brush.html")
 
 
-def trade_day2non_recurring_profit_day(start_date: date,profit_type = 'roll_profit'):
+def trade_day2non_recurring_profit_day(start_date: date, profit_type='roll_profit'):
     if start_date.month > 4:
         lrb_start_date = start_date
     else:
@@ -363,6 +364,8 @@ def trade_day2non_recurring_profit_day(start_date: date,profit_type = 'roll_prof
         else:
             lrb_start_date = start_date + relativedelta(years=-1)  # 只能看到前一年的利润表
     return lrb_start_date
+
+
 def draw_charts_compare(company1: CompanyProfile, company2: CompanyProfile, period: str,
                         start_date: date, end_date: date, rand='', path='', request=None,
                         profit_type='roll_profit'):
@@ -438,6 +441,8 @@ def draw_charts_compare(company1: CompanyProfile, company2: CompanyProfile, peri
             animation_opts=opts.AnimationOpts(animation=False),
         )
     )
+
+
     grid_chart.add(
         overlap_kline_kline,
         grid_opts=opts.GridOpts(pos_left="10%", pos_right="8%", pos_top="5%", height="45%"),
@@ -466,6 +471,7 @@ def draw_charts_compare(company1: CompanyProfile, company2: CompanyProfile, peri
         grid_chart.render(path + html_file_name)
     else:
         html_code = grid_chart.render_embed()
+        #html_code = html_chart_id_replace(chart_id=grid_chart.chart_id, html_string=html_code)
         return html_code
     return html_file_name
 
@@ -546,6 +552,7 @@ def draw_charts_company(company1: CompanyProfile, period: str,
             animation_opts=opts.AnimationOpts(animation=False),
         )
     )
+
     grid_chart.add(
         kline1,
         grid_opts=opts.GridOpts(pos_left="10%", pos_right="8%", pos_top="5%", height="45%"),
@@ -575,6 +582,7 @@ def draw_charts_company(company1: CompanyProfile, period: str,
         grid_chart.render(path + html_file_name)
     else:
         html_code = grid_chart.render_embed()
+        #html_code = html_chart_id_replace(chart_id=grid_chart.chart_id, html_string=html_code)
         return html_code
     return html_file_name
 
@@ -620,10 +628,10 @@ def draw_charts_company_regular0(company1: CompanyProfile, period: str,
         rate_title = '静态市盈率'
         income_title = '营业总收入涨幅'
         profit_title = '扣非净利润(百万元)'
-        profit_growth_title =  '扣非净利润涨幅'
+        profit_growth_title = '扣非净利润涨幅'
 
     # 创建公司的利润表
-    lrb_start_date = trade_day2non_recurring_profit_day(start_date=start_date,profit_type=profit_type)
+    lrb_start_date = trade_day2non_recurring_profit_day(start_date=start_date, profit_type=profit_type)
     lrb_data = company1.regular_non_recurring_profit_value_data_get(period=company1.market.season4,
                                                                     start_date=lrb_start_date,
                                                                     end_date=end_date,
@@ -666,7 +674,7 @@ def draw_charts_company_regular0(company1: CompanyProfile, period: str,
     # 创建营业额BAR
     income_data = company1.regular_income_data_get(season=company1.market.season4,
                                                    start_date=start_date,
-                                                   end_date=end_date,profit_type=profit_type)
+                                                   end_date=end_date, profit_type=profit_type)
     if income_data is None:
         print(run_info(company1), 'income_bar data is None')
         income_bar = None
@@ -693,6 +701,8 @@ def draw_charts_company_regular0(company1: CompanyProfile, period: str,
             animation_opts=opts.AnimationOpts(animation=False),
         )
     )
+    grid_add_js_funcs(grid_chart)
+
     grid_chart.add(
         #kline1,
         #overlap_kline_lrb,
@@ -724,6 +734,7 @@ def draw_charts_company_regular0(company1: CompanyProfile, period: str,
         grid_chart.render(path + html_file_name)
     else:
         html_code = grid_chart.render_embed()
+        html_code = html_chart_id_replace(chart_id=grid_chart.chart_id, html_string=html_code)
         return html_code
     return html_file_name
 
@@ -760,6 +771,119 @@ def company_sync_kline_data_get(company1: CompanyProfile, company2: CompanyProfi
         write_json_file('data/' + company2.code + '.json', json_data2)
 
     return json_data1, json_data2
+
+
+def html_chart_id_replace(chart_id: str, html_string: str):
+    # 使用正则表达式匹配ID
+    match = re.search(r'id="([a-f0-9]+)"', html_string)
+
+    if match:
+        real_chart_id = match.group(1)
+        print(run_info(chart_id), 'real_chart_id', real_chart_id)
+    else:
+        print("No match found.")
+        return html_string
+
+    new_string = re.sub(r'chart_([a-f0-9]+)', 'chart_'+real_chart_id,html_string)
+    new_string = re.sub(r'option_([a-f0-9]+)', 'option_' + real_chart_id,new_string)
+    return new_string
+
+
+def grid_add_js_funcs(grid_chart: Grid):
+    chart_id = grid_chart.chart_id
+    print(run_info(chart_id), 'chart_id is ', chart_id)
+    js_func_on_zoom = f"""
+        chart_{chart_id}.on('dataZoom', function(params) {{
+            if(area_selected){{
+                opts = {{}};
+                deepClone(opts_backup,opts);
+                chart_{chart_id}.setOption(opts);
+                area_selected = false;
+            }}
+        }});
+        """
+    js_func_on_brush_end = f"""
+        chart_{chart_id}.on('brushEnd', function(params) {{
+
+          var opts=option_{chart_id};
+        
+          if(!Object.keys(opts_backup).length){{
+              deepClone(opts,opts_backup);               
+          }}
+          
+          area_selected = true;
+          opts = {{}};
+          deepClone(opts_backup,opts);
+        
+          
+          
+          var series;
+          var data0;
+          var itemIndex;
+          var startIndex = 0,endIndex = -1
+          var factorNum;
+          var factors=new Array(16);
+          if(!params.areas.length || !params.areas[0].coordRange.length){{
+            console.log('params brushEnd',params);
+            return ;
+          }}
+          startIndex = params.areas[0].coordRange[0][0];
+          endIndex = params.areas[0].coordRange[0][1];
+          
+          for(arrayNum=0;arrayNum<opts.series.length;arrayNum++){{
+              series = opts.series[arrayNum];
+              console.log("brushEnd series.name ",series.name);
+              if(series.name=='扣非净利润(百万元)'){{
+                continue;
+              }}
+              if(series.name=='滚动扣非净利润(百万元)'){{
+                continue;
+              }}
+              if(series.name=='静态市盈率'){{
+                continue;
+              }}
+              if(series.name=='滚动市盈率'){{
+                continue;
+              }}
+              
+              
+              data0=series.data[startIndex];
+              for(factorNum=0;factorNum<data0.length;factorNum++){{
+                  factors[factorNum] = data0[factorNum];
+              }}
+              if('滚动扣非净利润涨幅'==series.name ||'滚动营业总收入涨幅'==series.name ||'营业总收入涨幅'==series.name ||'扣非净利润涨幅'==series.name){{
+                factorNum = 1;
+                for(itemIndex=0;itemIndex<series.data.length;itemIndex++){{                    
+                    if(!isNaN(parseFloat(series.data[itemIndex][factorNum])) && isFinite(series.data[itemIndex][factorNum])&&factors[factorNum]!=0){{
+                        series.data[itemIndex][factorNum] = Math.round(series.data[itemIndex][factorNum]/factors[factorNum]*100)/100;
+                    }}                           
+                    
+                }}
+                
+              }}
+              else{{
+                for(itemIndex=0;itemIndex<series.data.length;itemIndex++){{
+                    for(factorNum=0;factorNum<data0.length;factorNum++){{
+                        if(!isNaN(parseFloat(series.data[itemIndex][factorNum])) && isFinite(series.data[itemIndex][factorNum])&&factors[factorNum]!=0){{
+                            series.data[itemIndex][factorNum] = Math.round(series.data[itemIndex][factorNum]/factors[factorNum]*100)/100;
+                        }}                           
+                    }}
+                }}
+             }}   
+        
+          }}
+        
+          var length = opts.series[0].data.length;
+          opts.dataZoom[0].start = startIndex*100/length;
+          opts.dataZoom[0].end = endIndex*100/length;
+          console.log("startIndex",startIndex,"endIndex",endIndex,"length ",length);
+          chart_{chart_id}.setOption(opts);
+          
+        
+        }});
+        """
+    grid_chart.add_js_funcs(js_func_on_zoom)
+    grid_chart.add_js_funcs(js_func_on_brush_end)
 
 
 tool_tips_opts_pos_js_func = '''
@@ -805,7 +929,7 @@ def stock_beacon(request: requests):
     logger.setLevel(logging.DEBUG)
     full_path = request.get_full_path()
     parsed_url = urlparse(full_path)
-    index=0
+    index = 0
 
     params = parsed_url.query.split(sep='&')
 
@@ -852,7 +976,7 @@ def stock_beacon(request: requests):
 
     try:
         # 更新所有数据
-        ret = company_a.update_all(start_date,profit_time=profit_time)
+        ret = company_a.update_all(start_date, profit_time=profit_time)
         if ret is False:
             logger.error('update_all ret %s %s', ret, company_a.code)
             return None
@@ -902,7 +1026,7 @@ def stock_beacon(request: requests):
 
     try:
         # 更新所有数据
-        ret = company_b.update_all(start_date,profit_time=profit_time)
+        ret = company_b.update_all(start_date, profit_time=profit_time)
         if ret is False:
             logger.error('update_all ret %s %s', ret, company_b.code)
             return None

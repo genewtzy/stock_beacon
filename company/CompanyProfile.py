@@ -205,7 +205,9 @@ class CompanyProfile(object):
             print(run_info(self), 'kline_market_value_set weekly failed', self.market.season4)
             return False
         # 更新静态市盈率
+
         profit_type = 'static_profit'
+        print(run_info(self), 'profit_rate_set  start', profit_type)
         if self.profit_rate_set(period='daily',profit_type=profit_type):
             print(run_info(self), 'profit_rate_set daily success',profit_type)
         else:
@@ -220,6 +222,7 @@ class CompanyProfile(object):
 
         # 更新滚动市盈率
         profit_type = 'roll_profit'
+        print(run_info(self), 'profit_rate_set  start', profit_type)
         if self.profit_rate_set(period='daily', profit_type=profit_type):
             print(run_info(self), 'profit_rate_set daily success', profit_type)
         else:
@@ -475,7 +478,7 @@ class CompanyProfile(object):
         # 生成市盈率文件
         market_values = self.regular_market_value_data_get(period=period, start_date=start_date, end_date=end_date,
                                                            factor=1)
-        profit_values = self.regular_non_recurring_profit_value_data_get(period='-12-31', start_date=start_date,
+        profit_values = self.regular_non_recurring_profit_value_data_get(period=self.market.season4, start_date=start_date,
                                                                          end_date=end_date, factor=1,
                                                                          profit_type=profit_type)
         if market_values is None:
@@ -1062,6 +1065,7 @@ class CompanyProfile(object):
         :param start_date:
         :param end_date:
         """
+        print(run_info(self), self.code, 'filename',  path),
         total_data = read_json_file(file_path=path)
         if total_data is None:
             print(run_info(self), path, 'total_data', total_data)
