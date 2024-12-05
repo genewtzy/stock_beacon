@@ -36,6 +36,22 @@ def file_modify_date_get(file_path):
         print(run_info(file_path), str(e))
         return dt.strptime('1997-01-01', '%Y-%m-%d').date()
 
+def kline_last_date_get(file_path):
+    """
+
+    :param file_path:
+    :return:
+    """
+    try:
+        os.path.getmtime(file_path)
+        json_data = read_json_file(file_path)
+        last_data = json_data[-1]
+        print(run_info(file_path), last_data,last_data[0])
+        return dt.strptime(last_data[0], '%Y-%m-%d').date()
+    except Exception as e:
+        print(run_info(file_path), str(e))
+        return dt.strptime('1997-01-01', '%Y-%m-%d').date()
+
 
 def is_number(s):
     """

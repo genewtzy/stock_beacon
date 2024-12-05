@@ -93,20 +93,20 @@ class CompanyProfile(object):
             self.profit_time = profit_time
         # 更新K线数据
         if self.update_kline_data('daily'):
-            print(run_info(self), 'update_kline_data daily success')
+            print(run_info(self), self.code, 'update_kline_data daily success')
         else:
-            print(run_info(self), 'update_kline_data daily failed')
+            print(run_info(self), self.code,'update_kline_data daily failed')
             return False
 
         if self.update_kline_data('weekly'):
-            print(run_info(self), 'update_kline_data weekly success')
+            print(run_info(self), self.code,'update_kline_data weekly success')
         else:
-            print(run_info(self), 'update_kline_data weekly failed')
+            print(run_info(self), self.code,'update_kline_data weekly failed')
             return False
 
         # 指数更新已经完成了，以下是公司的一些初始化
         if self.is_index:
-            print(run_info(self), 'this is index', self.code, self.name)
+            print(run_info(self), self.code,'this is index', self.code, self.name)
             return True
 
         # 更新季度营业收入等
@@ -266,8 +266,8 @@ class CompanyProfile(object):
                 return -1
 
         # 获取更新的日期
-        kline_csv_file_path = self.kline_csv_file_path_get(period=period)
-        update_date = file_modify_date_get(kline_csv_file_path)
+        kline_csv_file_path = self.kline_json_file_path_get(period=period)
+        update_date = kline_last_date_get(kline_csv_file_path)
 
         # 获取当前日期
         current_date = dt.now().date()
@@ -277,7 +277,7 @@ class CompanyProfile(object):
         print(run_info(self), kline_csv_file_path, "Update date:", updated_date_str)
         print(run_info(self), "Current date:", current_date_str)
         if current_date <= update_date:
-            print(run_info(self), "Updating KLineData not necessary")
+            print(run_info(self), self.code, "Updating KLineData not necessary")
             return 1
 
         # 股票的历史交易数据
@@ -320,11 +320,8 @@ class CompanyProfile(object):
             if updated_csv_data is None:
                 combined_csv_data = old_csv_data
             else:
-                # 进行数据清洗
-                for item in updated_csv_data:
-                    if item not in old_csv_data:
-                        old_csv_data.add(item)
-                combined_csv_data = old_csv_data
+                # 合并DataFrame，去除重复的行
+                combined_csv_data = pd.concat([old_csv_data, updated_csv_data]).drop_duplicates()
 
         # 按日期进行排序
         combined_csv_data['日期'] = pd.to_datetime(combined_csv_data['日期'], format='%Y-%m-%d')
@@ -356,6 +353,7 @@ class CompanyProfile(object):
         dates = np.datetime_as_string(dates, 'D')
 
         print(run_info(self), 'dates[0]', dates[0], type[dates[0]])
+        print(run_info(self), 'dates[last]', dates[-1], type[dates[0]])
         json_data = self.trade_data2json(dates=dates, opens=opens, closes=closes, lows=lows, highs=highs,
                                          volumes=amounts)
         if not self.is_index:
@@ -1094,9 +1092,10 @@ class CompanyProfile(object):
             return None
 
         regular_data = total_data[start_index:end_index]
-        print(run_info(self), self.code, 'regular_data[0]', regular_data[0])
+
         if end_index < len(total_data):
             regular_data.append(total_data[end_index])
+        print(run_info(self), self.code, 'regular_data[0]', regular_data[0])
         print(run_info(self), self.code, 'end_index', end_index, 'len', len(regular_data))
         if factor == 0:
             factor = 1 / float(regular_data[0][1])
